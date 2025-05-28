@@ -1,12 +1,15 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import userRoutes from './routes/user.routes';
+import areaRouter from './routes/area.routes';
+import sensorRouter from './routes/sensor.routes';
+import { errorMiddleware } from './middlewares/error.middleware';
+  
 
 dotenv.config();
 const app = express();
-const prisma = new PrismaClient();
-const PORT = +process.env.PORT!;
+const PORT = Number(process.env.PORT) || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -16,9 +19,10 @@ app.get('/', (_req, res) => {
   res.json({ status: 'ok trouxinildo', timestamp: new Date() });
 });
 
-// Rota sem genéricos explícitos
+app.use('/users', userRoutes);
+app.use('/areas', areaRouter);
+app.use('/sensors', sensorRouter);
 
+app.use(errorMiddleware);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Backend listening on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
