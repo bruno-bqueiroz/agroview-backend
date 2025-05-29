@@ -1,6 +1,7 @@
 // src/services/sensor.service.ts
-import { SensorRepository } from '../repositories/sensor.repository'; // Ajuste o caminho
-import type { Sensor, Prisma } from '@prisma/client';
+import { SensorDataRepository } from '../repositories/sensordata.repository'; // <<< IMPORTAR
+import type { Sensor, SensorData, Prisma } from '@prisma/client';
+import { SensorRepository } from '../repositories/sensor.repository'; 
 
 // Interface para dados de criação, incluindo userId
 interface CreateSensorData {
@@ -22,8 +23,21 @@ interface SensorUpdateData {
   areaId?: number; // Permitir mudar a área do sensor
 }
 
+interface CreateSensorReadingData {
+  value: number; // O valor da leitura do sensor
+  timestamp?: Date | string; // Opcional, backend pode gerar
+}
+
+
+
+interface CreateSensorData { areaId: number; userId: number; name: string; type: string; model?: string; active?: boolean; installedAt?: Date; }
+interface CreateSensorReadingData { value: number; timestamp?: Date | string; }
+
 export class SensorService {
   private repo = new SensorRepository();
+
+    private sensorRepo = new SensorRepository(); // Para operações no Sensor em si
+    private sensorDataRepo = new SensorDataRepository(); // <<< INSTANCIAR
 
   async createSensor(data: CreateSensorData): Promise<Sensor> {
     const sensorDataToCreate: Prisma.SensorCreateInput = {
@@ -100,5 +114,38 @@ export class SensorService {
       throw err;
     }
     return this.repo.delete(sensorId);
+  }
+
+ 
+
+  async addSensorReading(sensorId: number, data: CreateSensorReadingData): Promise<SensorData> {
+    // Verificar se o sensor principal existe
+    const sensor = await this.sensorRepo.findById(sensorId);
+    if (!sensor) {
+      const err = new Error('Sensor não encontrado para adicionar leitura.');
+      (err as any).status = 404;
+      throw err;
+    }
+
+    return this.sensorDataRepo.create({ // Chama o método do SensorDataRepository
+      sensorId: sensorId,
+      value: data.value,
+      timestamp: data.timestamp ? new Date(data.timestamp) : undefined, // Undefined para default no repo
+    });
+  }
+
+  async listReadingsForSensor(
+    sensorId: number,
+    limit?: number,
+    orderBy?: 'asc' | 'desc'
+  ): Promise<SensorData[]> {
+    // Verificar se o sensor principal existe
+    const sensor = await this.sensorRepo.findById(sensorId);
+    if (!sensor) {
+      const err = new Error('Sensor não encontrado para buscar leituras.');
+      (err as any).status = 404;
+      throw err;
+    }
+    return this.sensorDataRepo.findBySensorId(sensorId, limit, orderBy);
   }
 }

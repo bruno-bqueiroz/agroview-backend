@@ -4,6 +4,9 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 import { StringValue } from 'ms'; // Importação para o tipo de expiresIn
 import { UserRepository } from '../repositories/user.repository'; // Ajuste o caminho se necessário
 import { User } from '@prisma/client'; // Tipo gerado pelo Prisma
+import {prisma} from '../prismaClient';
+import { SensorDataRepository } from '../repositories/sensordata.repository'; // <<< IMPORTAR O NOVO REPOSITÓRIO
+import type { SensorData } from '@prisma/client';
 
 // Interfaces para clareza
 interface LoginCredentials {
@@ -116,6 +119,28 @@ export class UserService {
       },
       token,
     };
+  }
+
+  private sensorDataRepo = new SensorDataRepository(); // <<< INSTANCIAR O NOVO REPOSITÓRIO
+
+  async getDashboardStats(userId: number): Promise<{
+    totalAreas: number;
+    totalSensors: number;
+    activeSensors: number;
+  }> {
+    const totalAreas = await prisma.area.count({ where: { userId } });
+    const totalSensors = await prisma.sensor.count({ where: { userId } });
+    const activeSensors = await prisma.sensor.count({ where: { userId, active: true } });
+    return { totalAreas, totalSensors, activeSensors };
+  }
+
+  async getTemperatureTrend(
+    userId: number,
+    options?: { limit?: number }
+  ): Promise<SensorData[]> {
+    const limit = options?.limit || 30;
+    // Agora usa o sensorDataRepo
+    return this.sensorDataRepo.findRecentTemperatureReadingsForUser(userId, limit);
   }
 }
 

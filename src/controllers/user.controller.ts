@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserService } from '../services/user.service';
 
+
 const service = new UserService(); // Você já tem essa instância
 
 export async function registerController(req: Request, res: Response, next: NextFunction) {
@@ -60,6 +61,52 @@ export async function loginController(req: Request, res: Response, next: NextFun
     res.json(loginResponse);
   } catch (err) {
     next(err); // Passa para o errorMiddleware
+  }
+}
+
+export async function getDashboardStatsController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = parseInt(req.params.userId, 10); // Pegando da URL
+    if (isNaN(userId)) {
+      const err = new Error('ID de usuário inválido na URL.');
+      (err as any).status = 400;
+      throw err;
+    }
+    
+    // Certifique-se que 'service' é a instância de UserService
+    const stats = await new UserService().getDashboardStats(userId); // Ou use a instância global 'service'
+    res.json(stats);
+  } catch (err) {
+    next(err);
+  }
+
+  
+}
+
+
+export async function getTemperatureTrendController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = parseInt(req.params.userId, 10);
+    if (isNaN(userId)) {
+      const err = new Error('ID de usuário inválido na URL.');
+      (err as any).status = 400;
+      throw err;
+    }
+
+    const limitQuery = req.query.limit as string | undefined;
+    const limit = limitQuery ? parseInt(limitQuery, 10) : undefined;
+
+    if (limit !== undefined && isNaN(limit)) {
+        const err = new Error('Parâmetro "limit" deve ser um número.');
+        (err as any).status = 400;
+        throw err;
+    }
+    
+    // Certifique-se que 'service' (ou new UserService()) é a instância correta
+    const temperatureData = await new UserService().getTemperatureTrend(userId, { limit });
+    res.json(temperatureData);
+  } catch (err) {
+    next(err);
   }
 }
 // --- FIM DO NOVO CONTROLLER DE LOGIN ---

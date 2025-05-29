@@ -56,6 +56,22 @@ export async function listSensorsByUserController(req: Request, res: Response, n
   }
 }
 
+export async function listSensorReadingsController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const sensorId = parseInt(req.params.sensorId, 10);
+    if (isNaN(sensorId)) { /* ... erro ... */ }
+
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+    const orderBy = req.query.orderBy as ('asc' | 'desc' | undefined);
+    // ... (validações para limit e orderBy como antes) ...
+
+    const readings = await sensorService.listReadingsForSensor(sensorId, limit, orderBy);
+    res.json(readings);
+  } catch (err) {
+    next(err);
+  }
+}
+
 // Controller para listar sensores por AreaId (se você quiser manter a rota antiga)
 export async function listSensorsByAreaController(req: Request, res: Response, next: NextFunction) {
   try {
@@ -109,6 +125,28 @@ export async function updateSensorController(req: Request, res: Response, next: 
     next(err);
   }
 }
+export async function createSensorReadingController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const sensorId = parseInt(req.params.sensorId, 10);
+    if (isNaN(sensorId)) {
+      const err = new Error('ID do sensor inválido na URL.');
+      (err as any).status = 400;
+      throw err;
+    }
+
+    const { value, timestamp } = req.body;
+    if (value === undefined || typeof value !== 'number') {
+      const err = new Error('O campo "value" (numérico) é obrigatório para a leitura do sensor.');
+      (err as any).status = 400;
+      throw err;
+    }
+
+    const reading = await sensorService.addSensorReading(sensorId, { value, timestamp });
+    res.status(201).json(reading);
+  } catch (err) {
+    next(err);
+  }
+}
 
 export async function getSensorByIdController(req: Request, res: Response, next: NextFunction) {
     try {
@@ -139,6 +177,8 @@ export async function deleteSensorController(req: Request, res: Response, next: 
   } catch (err) {
     next(err);
   }
+
+  
 }
 
 // Adicionar getSensorByIdController, updateSensorController, deleteSensorController quando formos implementar o CRUD completo

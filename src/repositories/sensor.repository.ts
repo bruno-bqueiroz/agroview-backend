@@ -1,6 +1,6 @@
 import { prisma } from '../prismaClient';
 // src/repositories/sensor.repository.ts
-import type { Sensor, Prisma } from '@prisma/client';
+import type { Sensor, Prisma, SensorData } from '@prisma/client';
 
 export class SensorRepository {
   async create(data: Prisma.SensorCreateInput): Promise<Sensor> {
@@ -51,4 +51,32 @@ export class SensorRepository {
   async delete(id: number): Promise<Sensor> {
     return prisma.sensor.delete({ where: { id } });
   }
+
+    // --- MÉTODOS PARA SensorData ---
+  async createSensorReading(data: Prisma.SensorDataUncheckedCreateInput): Promise<SensorData> {
+    // Prisma.SensorDataUncheckedCreateInput permite passar sensorId diretamente
+    return prisma.sensorData.create({
+      data: {
+        sensorId: data.sensorId,
+        value: data.value,
+        timestamp: data.timestamp || new Date(), // Default para agora se não fornecido
+      },
+    });
+  }
+
+  async findSensorReadings(
+    sensorId: number,
+    limit: number = 50,
+    orderBy: 'asc' | 'desc' = 'desc'
+  ): Promise<SensorData[]> {
+    return prisma.sensorData.findMany({
+      where: { sensorId },
+      orderBy: {
+        timestamp: orderBy,
+      },
+      take: limit,
+    });
+  }
+
 }
+

@@ -6,7 +6,9 @@ import {
   listSensorsByAreaController,  // Controller para a rota antiga, se mantida
   deleteSensorController,
   getSensorByIdController,
-  updateSensorController
+  updateSensorController,
+  listSensorReadingsController,
+  createSensorReadingController
   // Importar outros controllers quando forem criados (getById, update, delete)
 } from '../controllers/sensor.controller'; // Ajuste o caminho
 
@@ -28,6 +30,9 @@ sensorRouter.put('/:sensorId', updateSensorController);
 
 sensorRouter.delete('/:sensorId', deleteSensorController);
 
+sensorRouter.get('/:sensorId/data', listSensorReadingsController);
+
+sensorRouter.post('/:sensorId/data', createSensorReadingController);
 
 // Adicionar rotas para GET /:id, PUT /:id, DELETE /:id quando implementarmos o CRUD completo
 
