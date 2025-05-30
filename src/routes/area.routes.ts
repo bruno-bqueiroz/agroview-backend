@@ -16,7 +16,7 @@ areaRouter.use(authMiddleware); // <<< TODAS AS ROTAS ABAIXO ESTARÃO PROTEGIDAS
 
 areaRouter.post('/', createAreaController);
 
-areaRouter.get('/user/:userId', listAreasController);
+areaRouter.get('/', listAreasController);
 
 areaRouter.get('/:areaId', getAreaByIdController);
 

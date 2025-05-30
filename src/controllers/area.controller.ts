@@ -45,10 +45,6 @@ export async function createAreaController(req: Request, res: Response, next: Ne
   }
 }
 
-/**
- * Controller para listar todas as áreas do usuário autenticado.
- * O userId é obtido do token JWT (req.user.userId).
- */
 export async function listAreasController(req: Request, res: Response, next: NextFunction) {
   try {
     if (!req.user || req.user.userId === undefined) {

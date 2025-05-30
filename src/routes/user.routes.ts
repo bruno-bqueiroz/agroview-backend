@@ -1,23 +1,33 @@
 // src/routes/user.routes.ts
 import { Router } from 'express';
-// Adicionar loginController à importação
-import { registerController, getUserController, loginController, getDashboardStatsController, getTemperatureTrendController } from '../controllers/user.controller';
+import { 
+  registerController, 
+  getUserController, 
+  loginController,
+  getDashboardStatsController, // Controller para estatísticas
+  getTemperatureTrendController 
+} from '../controllers/user.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// Rota de Registro (POST /users/)
-router.post('/', registerController); // Seu original: POST /users -> cria usuário
+// Rotas públicas
+router.post('/register', registerController); // <<< Mudei POST / para POST /register para clareza
+router.post('/login', loginController);
 
-// Rota de Login (POST /users/login)
-router.post('/login', loginController); // <<< NOVA ROTA
+// --- Rotas Autenticadas ---
+// O authMiddleware será aplicado individualmente ou com router.use() para um grupo
 
-// Rota para Buscar Usuário por ID (GET /users/:id)
-router.get('/:id', getUserController);
+// Rota para estatísticas do dashboard do usuário LOGADO
+// Não precisa mais de :userId na URL aqui, o middleware cuida disso
+router.get('/dashboard-stats', authMiddleware, getDashboardStatsController); // GET /users/dashboard-stats
 
-router.get('/:userId/dashboard/temperature-trend', getTemperatureTrendController); // GET /users/:userId/dashboard/temperature-trend
+// Rota para tendência de temperatura do usuário LOGADO
+router.get('/dashboard/temperature-trend', authMiddleware, getTemperatureTrendController); // GET /users/dashboard/temperature-trend
+                                                                                        // (Removido :userId da URL)
 
-
-router.get('/:userId/dashboard-stats', getDashboardStatsController);
-
+// Rota para buscar dados de um usuário específico pelo ID (se ainda necessária e protegida)
+// Se esta rota for para buscar o *próprio* perfil, poderia ser /me
+router.get('/:id', authMiddleware, getUserController); 
 
 export default router;

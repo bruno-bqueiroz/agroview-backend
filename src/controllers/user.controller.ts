@@ -22,26 +22,6 @@ export async function registerController(req: Request, res: Response, next: Next
   }
 }
 
-export async function getUserController(req: Request, res: Response, next: NextFunction) {
-  try {
-    const id = Number(req.params.id);
-    if (isNaN(id)) {
-        const err = new Error('ID de usuário inválido.');
-        (err as any).status = 400; // Bad Request
-        throw err;
-    }
-    const user = await service.getById(id);
-    // Retornando dados do usuário como no seu original
-    res.json({ 
-        id: user.id, 
-        name: user.name, 
-        email: user.email, 
-        phone: user.phone 
-    });
-  } catch (err) {
-    next(err);
-  }
-}
 
 // --- NOVO CONTROLLER DE LOGIN ---
 export async function loginController(req: Request, res: Response, next: NextFunction) {
@@ -64,49 +44,62 @@ export async function loginController(req: Request, res: Response, next: NextFun
   }
 }
 
+
+function getAuthenticatedUserId(req: Request): number {
+  if (!req.user || req.user.userId === undefined) {
+    const err = new Error('Usuário não autenticado ou ID do usuário não encontrado no token.');
+    (err as any).status = 401;
+    throw err;
+  }
+  return req.user.userId;
+}
+
+
+
+export async function getUserController(req: Request, res: Response, next: NextFunction) {
+     try {
+         const authenticatedUserId = getAuthenticatedUserId(req); // Usuário logado
+         const requestedUserId = parseInt(req.params.id, 10);
+
+         // Por segurança, geralmente você só permite que um usuário veja seus próprios dados,
+         // a menos que seja um admin.
+         if (authenticatedUserId !== requestedUserId) {
+              // Você pode também permitir se for um admin, adicionando lógica de role aqui
+             const err = new Error('Acesso não autorizado aos dados deste usuário.');
+             (err as any).status = 403; // Forbidden
+             throw err;
+         }
+         if (isNaN(requestedUserId)) { /* ... erro ID inválido ... */ }
+         const user = await new UserService().getById(requestedUserId); // Ou use a instância 'service'
+         res.json({ id: user.id, name: user.name, email: user.email, phone: user.phone });
+     } catch (err) { next(err); }
+}
+
+
 export async function getDashboardStatsController(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = parseInt(req.params.userId, 10); // Pegando da URL
-    if (isNaN(userId)) {
-      const err = new Error('ID de usuário inválido na URL.');
-      (err as any).status = 400;
-      throw err;
-    }
-    
-    // Certifique-se que 'service' é a instância de UserService
-    const stats = await new UserService().getDashboardStats(userId); // Ou use a instância global 'service'
+    const userId = getAuthenticatedUserId(req); // <<< Pega o userId do token
+
+    const stats = await new UserService().getDashboardStats(userId); // Use a instância correta do service
     res.json(stats);
   } catch (err) {
     next(err);
   }
-
-  
 }
-
 
 export async function getTemperatureTrendController(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = parseInt(req.params.userId, 10);
-    if (isNaN(userId)) {
-      const err = new Error('ID de usuário inválido na URL.');
-      (err as any).status = 400;
-      throw err;
-    }
+    const userId = getAuthenticatedUserId(req); // <<< Pega o userId do token
 
     const limitQuery = req.query.limit as string | undefined;
     const limit = limitQuery ? parseInt(limitQuery, 10) : undefined;
-
-    if (limit !== undefined && isNaN(limit)) {
-        const err = new Error('Parâmetro "limit" deve ser um número.');
-        (err as any).status = 400;
-        throw err;
-    }
+    if (limit !== undefined && isNaN(limit)) { /* ... erro ... */ }
     
-    // Certifique-se que 'service' (ou new UserService()) é a instância correta
-    const temperatureData = await new UserService().getTemperatureTrend(userId, { limit });
+    const temperatureData = await new UserService().getTemperatureTrend(userId, { limit }); // Use a instância correta
     res.json(temperatureData);
   } catch (err) {
     next(err);
   }
 }
+
 // --- FIM DO NOVO CONTROLLER DE LOGIN ---

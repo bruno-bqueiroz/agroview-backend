@@ -1,39 +1,33 @@
 // src/routes/sensor.routes.ts
 import { Router } from 'express';
+import { authMiddleware } from '../middlewares/auth.middleware';
 import { 
   createSensorController, 
-  listSensorsByUserController, // Nome do controller atualizado/novo
-  listSensorsByAreaController,  // Controller para a rota antiga, se mantida
-  deleteSensorController,
+  listSensorsByUserController,
   getSensorByIdController,
   updateSensorController,
-  listSensorReadingsController,
-  createSensorReadingController
-  // Importar outros controllers quando forem criados (getById, update, delete)
-} from '../controllers/sensor.controller'; // Ajuste o caminho
+  deleteSensorController,
+  createSensorReadingController,
+  listSensorReadingsController
+} from '../controllers/sensor.controller';
 
 const sensorRouter = Router();
 
-// Criar novo sensor (POST /sensors)
-// O frontend precisará enviar userId e areaId no corpo
-sensorRouter.post('/', createSensorController);
+// Aplicar authMiddleware a todas as rotas de /sensors
+sensorRouter.use(authMiddleware);
 
-// Listar sensores de um usuário específico (GET /sensors?userId=X)
-sensorRouter.get('/', listSensorsByUserController);
+// Rotas CRUD para Sensores
+sensorRouter.post('/', createSensorController);      // Criar sensor (userId do token)
+sensorRouter.get('/', listSensorsByUserController); // Listar sensores do usuário (userId do token)
+sensorRouter.get('/:sensorId', getSensorByIdController);    // Buscar sensor por ID (verifica propriedade)
+sensorRouter.put('/:sensorId', updateSensorController);   // Atualizar sensor (verifica propriedade)
+sensorRouter.delete('/:sensorId', deleteSensorController); // Deletar sensor (verifica propriedade)
 
-// Rota original para listar sensores por área (se você quiser mantê-la)
-// GET /sensors/area/:areaId
-sensorRouter.get('/area/:areaId', listSensorsByAreaController);
+// Rotas para Dados de um Sensor Específico (SensorData)
+sensorRouter.post('/:sensorId/data', createSensorReadingController); // Adicionar leitura (verifica propriedade do sensor)
+sensorRouter.get('/:sensorId/data', listSensorReadingsController);  // Listar leituras (verifica propriedade do sensor)
 
-sensorRouter.get('/:sensorId', getSensorByIdController);
-sensorRouter.put('/:sensorId', updateSensorController);
-
-sensorRouter.delete('/:sensorId', deleteSensorController);
-
-sensorRouter.get('/:sensorId/data', listSensorReadingsController);
-
-sensorRouter.post('/:sensorId/data', createSensorReadingController);
-
-// Adicionar rotas para GET /:id, PUT /:id, DELETE /:id quando implementarmos o CRUD completo
+// A rota GET /sensors/area/:areaId foi removida, pois listamos agora por usuário autenticado.
+// Se precisar dela, ela também precisaria de lógica de autorização (ex: a área pertence ao usuário?)
 
 export default sensorRouter;
